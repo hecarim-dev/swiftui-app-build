@@ -1,4 +1,4 @@
-name: Build Unsigned SwiftUI App (Base64 Safe)
+name: Build Unsigned SwiftUI App (Base64 Safe + Fixed)
 
 on:
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
           cmluZz4xNS4wPC9zdHJpbmc+CjwvZGljdD4KPC9wbGlzdD4=
           B64
 
-          # ✅ FIXED: macOS base64 needs -i to read from file
+          # ✅ macOS base64 requires -i to read file
           base64 -i Info.plist.b64 -d > Info.plist
           rm Info.plist.b64
 
@@ -43,10 +43,13 @@ jobs:
                       VStack(spacing: 20) {
                           Text("🔥 Hello Hecarim!")
                               .font(.largeTitle)
-                          Text("Built fully on GitHub Actions with Base64-safe workflow 🚀")
+                          Text("Built 100% on GitHub Actions ⚙️\nUnsigned .IPA ready for eSign 🚀")
+                              .multilineTextAlignment(.center)
                               .foregroundColor(.secondary)
-                          Button("Tap me!") { print("Tapped!") }
-                              .buttonStyle(.borderedProminent)
+                          Button("Tap me!") {
+                              print("🫰 Hello from your custom SwiftUI app!")
+                          }
+                          .buttonStyle(.borderedProminent)
                       }
                       .padding()
                   }
@@ -58,7 +61,9 @@ jobs:
         run: |
           cd source/MyApp/Payload/MyApp.app
           echo "🧩 Compiling Swift source into ARM64 binary..."
-          swiftc -target arm64-apple-ios15.0 -sdk $(xcrun --sdk iphoneos --show-sdk-path) main.swift -o MyApp
+          swiftc -parse-as-library -target arm64-apple-ios15.0 \
+            -sdk $(xcrun --sdk iphoneos --show-sdk-path) \
+            main.swift -o MyApp
 
       - name: Package unsigned IPA
         run: |
