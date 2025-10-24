@@ -28,7 +28,8 @@ jobs:
           cmluZz4xNS4wPC9zdHJpbmc+CjwvZGljdD4KPC9wbGlzdD4=
           B64
 
-          base64 --decode Info.plist.b64 > Info.plist
+          # ✅ FIXED: macOS base64 needs -i to read from file
+          base64 -i Info.plist.b64 -d > Info.plist
           rm Info.plist.b64
 
           echo "🧩 Creating SwiftUI main.swift..."
