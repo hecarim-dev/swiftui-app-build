@@ -1,4 +1,4 @@
-name: Build SwiftUI Unsigned App (Compiled)
+name: Build Unsigned SwiftUI App (Base64 Safe)
 
 on:
   workflow_dispatch:
@@ -8,53 +8,55 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Prepare project files
+      - name: Prepare SwiftUI App files (Base64 method)
         run: |
           mkdir -p source/MyApp/Payload/MyApp.app
           cd source/MyApp/Payload/MyApp.app
 
-          # Info.plist
-          cat > Info.plist <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleName</key><string>MyApp</string>
-  <key>CFBundleIdentifier</key><string>com.hecarim.myapp</string>
-  <key>CFBundleExecutable</key><string>MyApp</string>
-  <key>CFBundlePackageType</key><string>APPL</string>
-  <key>MinimumOSVersion</key><string>15.0</string>
-</dict>
-</plist>
-EOF
+          echo "🧩 Creating Info.plist from Base64..."
+          cat > Info.plist.b64 <<'B64'
+          PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJ
+          QyAiLS8vQXBwbGUvL0RURCBQTElTVC8vRU4iICJodHRwOi8vd3d3LmFwcGxlLmNvbS9EVEQvUHJvcGVy
+          dHlMaXN0LTEuMC5kdGQiPgo8cGxpc3QgdmVyc2lvbj0iMS4wIj4KPGRpY3Q+CiAgPGtleT5DRkJ1bmRs
+          ZU5hbWU8L2tleT48c3RyaW5nPk15QXBwPC9zdHJpbmc+CiAgPGtleT5DRkJ1bmRsZUlkZW50aWZpZXI8
+          L2tleT48c3RyaW5nPmNvbS5oZWNhcmltLm15YXBwPC9zdHJpbmc+CiAgPGtleT5DRkJ1bmRsZUV4ZWN1
+          dGFibGU8L2tleT48c3RyaW5nPk15QXBwPC9zdHJpbmc+CiAgPGtleT5DRkJ1bmRsZVBhY2thZ2VUeXBl
+          PC9rZXk+PHN0cmluZz5BUFBMPC9zdHJpbmc+CiAgPGtleT5NaW5pbXVtT1NWZXJzaW9uPC9rZXk+PHN0
+          cmluZz4xNS4wPC9zdHJpbmc+CjwvZGljdD4KPC9wbGlzdD4=
+          B64
 
-          # Swift source
-          cat > main.swift <<EOF
-import SwiftUI
-@main
-struct MyApp: App {
-    var body: some Scene {
-        WindowGroup {
-            VStack(spacing: 20) {
-                Text("🔥 Hello Hecarim!")
-                    .font(.title)
-                Text("Built fully on iPhone via GitHub Actions!")
-                    .foregroundColor(.secondary)
-                Button("Tap me!") { print("Tapped!") }
-                    .buttonStyle(.borderedProminent)
-            }
-            .padding()
-        }
-    }
-}
-EOF
+          base64 --decode Info.plist.b64 > Info.plist
+          rm Info.plist.b64
 
-      - name: Compile Swift app
+          echo "🧩 Creating SwiftUI main.swift..."
+          cat > main.swift <<'SW'
+          import SwiftUI
+
+          @main
+          struct MyApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      VStack(spacing: 20) {
+                          Text("🔥 Hello Hecarim!")
+                              .font(.largeTitle)
+                          Text("Built fully on GitHub Actions with Base64-safe workflow 🚀")
+                              .foregroundColor(.secondary)
+                          Button("Tap me!") { print("Tapped!") }
+                              .buttonStyle(.borderedProminent)
+                      }
+                      .padding()
+                  }
+              }
+          }
+          SW
+
+      - name: Compile Swift App
         run: |
           cd source/MyApp/Payload/MyApp.app
+          echo "🧩 Compiling Swift source into ARM64 binary..."
           swiftc -target arm64-apple-ios15.0 -sdk $(xcrun --sdk iphoneos --show-sdk-path) main.swift -o MyApp
 
       - name: Package unsigned IPA
@@ -62,7 +64,7 @@ EOF
           cd source/MyApp
           zip -r ../../MyApp-unsigned.ipa Payload
 
-      - name: Upload IPA artifact
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: MyApp-unsigned
