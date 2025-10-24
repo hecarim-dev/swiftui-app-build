@@ -1,0 +1,47 @@
+name: Build Unsigned iOS App (for eSign)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: 🧰 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 📦 Unzip SwiftUI project
+        run: |
+          unzip swiftui_template.zip -d source
+          ls -R source
+
+      - name: 🧱 Setup build environment
+        run: |
+          echo "Setting up Xcode environment..."
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: 🛠️ Build unsigned .ipa
+        run: |
+          cd source/MyApp
+          mkdir -p build
+          xcodebuild \
+            -scheme MyApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/MyApp.xcarchive \
+            clean archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+          mkdir -p Payload
+          cp -r build/MyApp.xcarchive/Products/Applications/MyApp.app Payload/
+          zip -r MyApp-unsigned.ipa Payload
+
+      - name: 🚀 Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyApp-unsigned
+          path: source/MyApp/MyApp-unsigned.ipa
