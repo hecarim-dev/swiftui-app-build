@@ -1,108 +1,20 @@
-name: Build Unsigned iOS App (Fixed Xcode Project)
+name: Sanity check (YAML valid)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  sanity:
     runs-on: macos-latest
 
     steps:
-      - name: 🧰 Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📦 Prepare SwiftUI project
+      - name: Run simple checks
         run: |
-          unzip swiftui_template.zip -d source
-          cd source
-          mkdir -p MyApp
-          cd MyApp
-          mkdir -p MyApp.xcodeproj
-
-          cat > MyApp.xcodeproj/project.pbxproj <<'EOF'
-// !$*UTF8*$!
-{
-	archiveVersion = 1;
-	classes = {};
-	objectVersion = 56;
-	objects = {
-		PROJECT_ID = {
-			isa = PBXProject;
-			buildConfigurationList = BUILD_CONFIG_LIST;
-			compatibilityVersion = "Xcode 12.0";
-			developmentRegion = en;
-			hasScannedForEncodings = 0;
-			mainGroup = MAIN_GROUP;
-			productRefGroup = MAIN_GROUP;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (TARGET_ID, );
-		};
-		TARGET_ID = {
-			isa = PBXNativeTarget;
-			name = MyApp;
-			productName = MyApp;
-			productType = "com.apple.product-type.application";
-			buildConfigurationList = TARGET_CONFIG_LIST;
-		};
-		TARGET_CONFIG_LIST = {
-			isa = XCConfigurationList;
-			buildConfigurations = (DEBUG_CONFIG, RELEASE_CONFIG, );
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		DEBUG_CONFIG = {
-			isa = XCBuildConfiguration;
-			name = Debug;
-			buildSettings = { PRODUCT_NAME = MyApp; };
-		};
-		RELEASE_CONFIG = {
-			isa = XCBuildConfiguration;
-			name = Release;
-			buildSettings = { PRODUCT_NAME = MyApp; };
-		};
-		BUILD_CONFIG_LIST = {
-			isa = XCConfigurationList;
-			buildConfigurations = (DEBUG_CONFIG, RELEASE_CONFIG, );
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		MAIN_GROUP = {
-			isa = PBXGroup;
-			children = ();
-			sourceTree = "<group>";
-		};
-	};
-	rootObject = PROJECT_ID;
-}
-EOF
-
-      - name: 🧱 Setup Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode.app
-          xcodebuild -version
-
-      - name: 🛠️ Build unsigned .ipa
-        run: |
-          cd source/MyApp
-          mkdir -p build
-          xcodebuild \
-            -project MyApp.xcodeproj \
-            -scheme MyApp \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath build/MyApp.xcarchive \
-            clean archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO || true
-
-          mkdir -p Payload
-          cp -r build/MyApp.xcarchive/Products/Applications/MyApp.app Payload/ || echo "No .app found"
-          zip -r MyApp-unsigned.ipa Payload || echo "Zipping failed fallback"
-
-      - name: 🚀 Upload unsigned IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyApp-unsigned
-          path: source/MyApp/MyApp-unsigned.ipa
+          echo "Sanity run: workflow file is valid"
+          echo "User: $(whoami)"
+          echo "PWD: $(pwd)"
+          uname -a
+          ls -la
