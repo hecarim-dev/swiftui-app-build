@@ -1,4 +1,4 @@
-name: Build SwiftUI Unsigned App (Safe)
+name: Build SwiftUI Unsigned App (Compiled)
 
 on:
   workflow_dispatch:
@@ -8,38 +8,62 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare SwiftUI App
+      - name: Prepare project files
         run: |
-          mkdir -p source/MyApp
-          cd source/MyApp
+          mkdir -p source/MyApp/Payload/MyApp.app
+          cd source/MyApp/Payload/MyApp.app
 
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > Info.plist
-          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Info.plist
-          echo '<plist version="1.0"><dict>' >> Info.plist
-          echo '<key>CFBundleName</key><string>MyApp</string>' >> Info.plist
-          echo '<key>CFBundleIdentifier</key><string>com.hecarim.myapp</string>' >> Info.plist
-          echo '<key>CFBundleExecutable</key><string>MyApp</string>' >> Info.plist
-          echo '<key>CFBundlePackageType</key><string>APPL</string>' >> Info.plist
-          echo '<key>MinimumOSVersion</key><string>15.0</string>' >> Info.plist
-          echo '</dict></plist>' >> Info.plist
+          # Info.plist
+          cat > Info.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>MyApp</string>
+  <key>CFBundleIdentifier</key><string>com.hecarim.myapp</string>
+  <key>CFBundleExecutable</key><string>MyApp</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>MinimumOSVersion</key><string>15.0</string>
+</dict>
+</plist>
+EOF
 
-          echo 'import SwiftUI\n\n@main\nstruct MyApp: App {\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n        }\n    }\n}\n\nstruct ContentView: View {\n    @State private var counter = 0\n    var body: some View {\n        VStack(spacing: 20) {\n            Text("Hello from GitHub Actions 👋")\n                .font(.title2)\n            Text("Tapping \\(counter) times")\n                .foregroundColor(.secondary)\n            Button("Tap me!") { counter += 1 }\n                .buttonStyle(.borderedProminent)\n        }\n        .padding()\n    }\n}' > main.swift
+          # Swift source
+          cat > main.swift <<EOF
+import SwiftUI
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            VStack(spacing: 20) {
+                Text("🔥 Hello Hecarim!")
+                    .font(.title)
+                Text("Built fully on iPhone via GitHub Actions!")
+                    .foregroundColor(.secondary)
+                Button("Tap me!") { print("Tapped!") }
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding()
+        }
+    }
+}
+EOF
 
-      - name: Build unsigned IPA
+      - name: Compile Swift app
+        run: |
+          cd source/MyApp/Payload/MyApp.app
+          swiftc -target arm64-apple-ios15.0 -sdk $(xcrun --sdk iphoneos --show-sdk-path) main.swift -o MyApp
+
+      - name: Package unsigned IPA
         run: |
           cd source/MyApp
-          mkdir -p build Payload
-          echo "Building SwiftUI app (unsigned)..."
-          xcodebuild -scheme MyApp -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || true
-          mkdir -p Payload/MyApp.app
-          cp Info.plist main.swift Payload/MyApp.app/
-          zip -r MyApp-unsigned.ipa Payload
+          zip -r ../../MyApp-unsigned.ipa Payload
 
-      - name: Upload unsigned IPA
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: MyApp-unsigned
-          path: source/MyApp/MyApp-unsigned.ipa
+          path: MyApp-unsigned.ipa
